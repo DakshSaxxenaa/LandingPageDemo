@@ -87,6 +87,47 @@ body{
   will-change:opacity,transform;
 }
 
+/* ══════════ chapter backdrops ══════════
+   Each scene owns a --t presence value (0 → 1 → 0) and a --v scroll-speed
+   value, both set from JS. The photo scales down and pulls into focus as
+   it arrives, then defocuses back out on the way to the next chapter. */
+.scene{position:absolute;inset:0;z-index:2;overflow:hidden;pointer-events:none;
+  opacity:var(--t,0);--t:0;will-change:opacity}
+.scene.off{visibility:hidden}          /* stops idle scenes compositing */
+.scene .bg{position:absolute;inset:-7%;background-size:cover;background-position:50% 42%;
+  /* photos pulled toward the site's cold blue; they resolve out of a defocus,
+     and pick up extra blur with scroll speed */
+  filter:saturate(.55) contrast(1.16) brightness(.46) hue-rotate(186deg)
+         blur(calc((1 - var(--t)) * 18px + var(--v,0) * 10px));
+  transform:scale(calc(1.14 - var(--t) * 0.12));
+  will-change:transform,filter}
+.scene .tint{position:absolute;inset:0;mix-blend-mode:screen;
+  background:linear-gradient(150deg,rgba(11,61,145,.62) 0%,rgba(0,0,0,0) 52%,rgba(47,227,255,.2) 100%)}
+.scene .tint.magenta{background:linear-gradient(150deg,rgba(11,61,145,.5) 0%,rgba(0,0,0,0) 48%,rgba(255,45,135,.24) 100%)}
+.scene .vig{position:absolute;inset:0;
+  background:
+    radial-gradient(ellipse 58% 50% at 50% 48%, rgba(0,6,22,.34) 0%, rgba(0,5,20,.72) 58%, rgba(0,3,14,.94) 100%),
+    linear-gradient(180deg,rgba(0,4,16,.6) 0%,rgba(0,0,0,0) 30%,rgba(0,0,0,0) 68%,rgba(0,3,14,.85) 100%)}
+
+/* keep each subject in frame — all three are tall portraits on a wide stage */
+#sc-word  .bg{background-position:50% 38%}
+#sc-event .bg{background-position:50% 42%}
+#sc-pro   .bg{background-position:44% 55%}
+
+/* 4. terminus watermark */
+.scene-logo{background:radial-gradient(ellipse 55% 48% at 50% 50%,rgba(9,42,110,.5) 0%,rgba(0,5,20,.85) 62%,rgba(0,3,14,.97) 100%)}
+.scene-logo .mark{position:absolute;left:50%;top:50%;width:min(78vw,760px);
+  transform:translate(-50%,-50%) scale(calc(0.86 + var(--t) * 0.14));
+  opacity:calc(var(--t) * .32);mix-blend-mode:screen;
+  filter:blur(calc((1 - var(--t)) * 14px)) drop-shadow(0 0 55px rgba(47,227,255,.45));
+  will-change:transform,opacity,filter}
+/* breathing halo sits on its own layer so it can't clobber the reveal blur */
+.scene-logo::after{content:"";position:absolute;left:50%;top:50%;width:min(70vw,680px);
+  aspect-ratio:347/195;transform:translate(-50%,-50%);pointer-events:none;
+  background:radial-gradient(ellipse 50% 50% at 50% 50%,rgba(47,227,255,.22) 0%,rgba(11,61,145,.1) 45%,transparent 72%);
+  filter:blur(40px);opacity:calc(var(--t) * .9);animation:markpulse 8s ease-in-out infinite}
+@keyframes markpulse{0%,100%{transform:translate(-50%,-50%) scale(1)}50%{transform:translate(-50%,-50%) scale(1.14)}}
+
 /* ══════════ hero HUD ══════════ */
 .hero{position:absolute;inset:0;z-index:4;pointer-events:none;
   display:flex;flex-direction:column;justify-content:space-between;
@@ -250,7 +291,7 @@ body{
   .card{padding:1.4rem 1.2rem}
 }
 @media (prefers-reduced-motion:reduce){
-  .core,.eq i,.grain,.marquee .row,.scroll-cue .bar,.lockup span{animation:none}
+  .core,.eq i,.grain,.marquee .row,.scroll-cue .bar,.lockup span,.scene-logo::after{animation:none}
 }
 </style>
 </head>
@@ -264,9 +305,27 @@ body{
 
   <!-- ── video ── -->
   <div class="video-wrap" id="videoWrap">
-    <video id="hero" src="../assets/thomso-loop.mp4" poster="../assets/poster.jpg"
+    <video id="hero" src="assets/thomso-loop.mp4" poster="assets/poster.jpg"
            muted loop playsinline autoplay preload="auto"></video>
     <div class="streaks" id="streaks"></div>
+  </div>
+
+  <!-- ── chapter backdrops: one per chapter, only alive while its screen is ── -->
+  <div class="scene" id="sc-word">
+    <div class="bg" style="background-image:url('assets/shaan.jpg')"></div>
+    <div class="tint"></div><div class="vig"></div>
+  </div>
+  <div class="scene" id="sc-event">
+    <div class="bg" style="background-image:url('assets/saleem.jpg')"></div>
+    <div class="tint"></div><div class="vig"></div>
+  </div>
+  <div class="scene" id="sc-pro">
+    <div class="bg" style="background-image:url('assets/navjot.webp')"></div>
+    <div class="tint magenta"></div><div class="vig"></div>
+  </div>
+  <div class="scene scene-logo" id="sc-end">
+    <img class="mark" src="assets/thomso-logo-neon.svg" alt="" aria-hidden="true">
+    <div class="vig"></div>
   </div>
 
   <!-- ── hero HUD ── -->
@@ -378,6 +437,14 @@ body{
   const rail      = $('rail');
   const dots      = [...rail.querySelectorAll('.dot')];
 
+  /* chapter backdrops: [element, fadeInStart, fullIn, holdEnd, fadeOutEnd] */
+  const SCENES = [
+    [$('sc-word'),  0.165, 0.275, 0.425, 0.505],
+    [$('sc-event'), 0.430, 0.520, 0.600, 0.655],
+    [$('sc-pro'),   0.600, 0.690, 0.770, 0.818],
+    [$('sc-end'),   0.780, 0.885, 2.000, 2.100]   // never leaves — it is the end
+  ];
+
   /* ─────────── timeline (progress 0 → 1) ───────────
      0.00–0.16  video holds, hero HUD live
      0.06–0.24  video + HUD fade out
@@ -451,6 +518,14 @@ body{
     heroLayer.style.transform = `translateY(${(-hOut * 70 - v * 30).toFixed(2)}px) scale(${(1 - hOut * 0.06).toFixed(4)})`;
     marquee.style.opacity     = (1 - hOut).toFixed(4);
     cue.style.opacity         = (1 - clamp(p / 0.04)).toFixed(3);
+
+    /* ── chapter backdrops: pull into focus on arrival, defocus on exit ── */
+    for (const [el, a, b, c, d] of SCENES){
+      const t = ease(range(p, [a, b])) * (1 - ease(range(p, [c, d])));
+      el.style.setProperty('--t', t.toFixed(4));
+      el.style.setProperty('--v', v.toFixed(4));
+      el.classList.toggle('off', t < 0.001);
+    }
 
     /* ── 3 + 4. cursive wordmark: fade in, spin on Y, fade out ── */
     const wIn   = ease(range(p, WORD_IN));
