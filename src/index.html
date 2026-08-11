@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>THOMSO'26 — IIT Roorkee</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Orbitron:wght@500;700;900&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#00040e;
+  --navy:#03102e;
+  --blue:#0b3d91;
+  --neon:#2fe3ff;
+  --neon-dim:#63c8ff;
+  --magenta:#ff2d87;
+  --amber:#ffc247;
+  --text:#d8ecff;
+}
+
+*{margin:0;padding:0;box-sizing:border-box}
+html{background:var(--ink)}
+body{
+  background:var(--ink);
+  color:var(--text);
+  font-family:'Rajdhani',system-ui,sans-serif;
+  overflow-x:hidden;
+}
+::selection{background:var(--neon);color:#00121c}
+
+/* ══════════ backdrop ══════════ */
+.backdrop{position:fixed;inset:0;z-index:0;
+  background:
+    radial-gradient(ellipse 60% 50% at 50% 48%, rgba(35,120,255,.30) 0%, rgba(10,45,130,.18) 34%, rgba(2,9,32,.8) 64%, var(--ink) 100%),
+    linear-gradient(180deg,#00030b 0%, var(--navy) 50%, #00030b 100%);
+}
+.grid{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.5;
+  background:
+    linear-gradient(90deg,rgba(47,227,255,.055) 1px,transparent 1px) 0 0/68px 100%,
+    linear-gradient(rgba(47,227,255,.055) 1px,transparent 1px) 0 0/100% 68px;
+  mask-image:radial-gradient(ellipse 75% 65% at 50% 50%,#000 15%,transparent 88%);
+  -webkit-mask-image:radial-gradient(ellipse 75% 65% at 50% 50%,#000 15%,transparent 88%);
+}
+.core{position:fixed;left:50%;top:50%;width:72vw;height:72vw;transform:translate(-50%,-50%);
+  z-index:0;pointer-events:none;filter:blur(30px);
+  background:radial-gradient(circle,rgba(60,155,255,.30) 0%,rgba(18,70,190,.12) 40%,transparent 70%);
+  animation:breathe 7s ease-in-out infinite;
+}
+@keyframes breathe{0%,100%{opacity:.7;transform:translate(-50%,-50%) scale(1)}50%{opacity:1;transform:translate(-50%,-50%) scale(1.08)}}
+
+/* film grain */
+.grain{position:fixed;inset:-50%;z-index:6;pointer-events:none;opacity:.05;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/></filter><rect width='140' height='140' filter='url(%23n)'/></svg>");
+  animation:grainshift .6s steps(3) infinite;
+}
+@keyframes grainshift{0%{transform:translate(0,0)}33%{transform:translate(-3%,2%)}66%{transform:translate(2%,-3%)}}
+
+/* ══════════ stage ══════════ */
+.stage{position:fixed;inset:0;z-index:1;overflow:hidden;perspective:1400px}
+.scroll-track{position:relative;z-index:1;height:620vh}
+
+/* ══════════ video ══════════ */
+.video-wrap{position:absolute;inset:0;will-change:transform,opacity,filter}
+.video-wrap video{width:100%;height:100%;object-fit:cover;display:block;
+  filter:saturate(.62) contrast(1.14) brightness(.62) hue-rotate(190deg);
+}
+.video-wrap::after{content:"";position:absolute;inset:0;pointer-events:none;
+  background:
+    radial-gradient(ellipse 62% 52% at 50% 50%, rgba(30,110,255,.26) 0%, transparent 66%),
+    linear-gradient(180deg,rgba(0,4,16,.72) 0%,rgba(2,16,48,.42) 45%,rgba(0,3,14,.86) 100%);
+  mix-blend-mode:multiply;
+}
+.video-wrap::before{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;
+  background:linear-gradient(120deg,rgba(11,61,145,.5),rgba(0,0,0,0) 55%,rgba(47,227,255,.14));
+  mix-blend-mode:screen;
+}
+
+/* speed streaks driven by scroll velocity */
+.streaks{position:absolute;inset:0;z-index:5;pointer-events:none;opacity:0;
+  background:repeating-linear-gradient(180deg,
+    transparent 0 6px,
+    rgba(47,227,255,.5) 6px 7px,
+    transparent 7px 26px);
+  mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent);
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent);
+  will-change:opacity,transform;
+}
+
+/* ══════════ hero HUD ══════════ */
+.hero{position:absolute;inset:0;z-index:4;pointer-events:none;
+  display:flex;flex-direction:column;justify-content:space-between;
+  padding:clamp(1.1rem,3vw,2.6rem);will-change:opacity,transform}
+
+.hud-row{display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;
+  font-family:'Orbitron',sans-serif;font-size:.58rem;letter-spacing:.28em;
+  color:rgba(120,205,255,.82);text-transform:uppercase}
+.hud-row .r{text-align:right}
+.hud-row b{display:block;color:var(--neon);font-weight:700;text-shadow:0 0 14px rgba(47,227,255,.7)}
+
+.hero-mid{text-align:center;display:flex;flex-direction:column;align-items:center;gap:1.1rem}
+.kicker{font-family:'Orbitron',sans-serif;font-size:clamp(.55rem,1.1vw,.75rem);
+  letter-spacing:.62em;text-indent:.62em;color:var(--neon-dim);
+  text-shadow:0 0 20px rgba(47,227,255,.7)}
+
+/* glitch lockup */
+.lockup{position:relative;font-family:'Orbitron',sans-serif;font-weight:900;
+  font-size:clamp(2.6rem,10.5vw,9rem);line-height:.9;letter-spacing:.04em;color:#fff;
+  text-shadow:0 0 26px rgba(47,227,255,.55),0 0 70px rgba(11,61,145,.9)}
+.lockup span{position:absolute;inset:0;pointer-events:none}
+.lockup span:nth-child(1){color:var(--magenta);mix-blend-mode:screen;animation:gl1 3.4s steps(2) infinite}
+.lockup span:nth-child(2){color:var(--neon);mix-blend-mode:screen;animation:gl2 2.7s steps(2) infinite}
+@keyframes gl1{0%,92%,100%{transform:translate(0,0);opacity:0}93%{transform:translate(-4px,2px);opacity:.85}96%{transform:translate(3px,-2px);opacity:.6}}
+@keyframes gl2{0%,88%,100%{transform:translate(0,0);opacity:0}90%{transform:translate(5px,-1px);opacity:.8}94%{transform:translate(-3px,2px);opacity:.5}}
+
+/* countdown */
+.countdown{display:flex;gap:clamp(.5rem,1.6vw,1.3rem);align-items:flex-end}
+.unit{min-width:clamp(52px,7vw,86px);padding:.55rem .3rem .45rem;
+  border:1px solid rgba(47,227,255,.3);background:rgba(4,20,54,.5);
+  clip-path:polygon(0 0,100% 0,100% calc(100% - 9px),calc(100% - 9px) 100%,0 100%)}
+.unit .n{font-family:'Orbitron',sans-serif;font-weight:700;font-size:clamp(1.1rem,2.6vw,2rem);
+  color:#fff;text-shadow:0 0 18px rgba(47,227,255,.8);font-variant-numeric:tabular-nums}
+.unit .l{font-family:'Orbitron',sans-serif;font-size:.45rem;letter-spacing:.3em;
+  color:rgba(120,205,255,.7);margin-top:.25rem}
+
+/* equaliser */
+.eq{display:flex;align-items:flex-end;gap:3px;height:34px}
+.eq i{width:3px;background:linear-gradient(180deg,var(--neon),rgba(255,45,135,.7));
+  animation:bounce 1.1s ease-in-out infinite;transform-origin:bottom;border-radius:1px}
+@keyframes bounce{0%,100%{height:15%}50%{height:100%}}
+
+/* marquee */
+.marquee{position:absolute;left:0;right:0;bottom:0;z-index:4;overflow:hidden;
+  border-top:1px solid rgba(47,227,255,.22);border-bottom:1px solid rgba(47,227,255,.22);
+  background:rgba(2,10,32,.55);backdrop-filter:blur(4px);padding:.5rem 0;
+  will-change:opacity}
+.marquee .row{display:flex;width:max-content;animation:slide 26s linear infinite;
+  font-family:'Orbitron',sans-serif;font-size:.62rem;letter-spacing:.4em;
+  color:rgba(150,220,255,.75);text-transform:uppercase;white-space:nowrap}
+.marquee .row em{color:var(--magenta);font-style:normal;margin:0 .9rem}
+.marquee .row span{padding:0 1.2rem}
+@keyframes slide{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+.scroll-cue{position:absolute;left:50%;bottom:3.4rem;transform:translateX(-50%);z-index:5;
+  display:flex;flex-direction:column;align-items:center;gap:.5rem;pointer-events:none;
+  font-family:'Orbitron',sans-serif;font-size:.55rem;letter-spacing:.4em;
+  color:rgba(140,215,255,.8);text-transform:uppercase}
+.scroll-cue .bar{width:1px;height:40px;background:linear-gradient(180deg,var(--neon),transparent);
+  animation:drop 1.8s ease-in-out infinite}
+@keyframes drop{0%,100%{opacity:.25;transform:scaleY(.45)}50%{opacity:1;transform:scaleY(1)}}
+
+/* ══════════ THOMSO'26 cursive ══════════ */
+.wordmark{position:absolute;inset:0;z-index:5;display:grid;place-items:center;
+  pointer-events:none;opacity:0;transform-style:preserve-3d;will-change:opacity,transform}
+.wordmark h1{font-family:'Great Vibes','Brush Script MT','Segoe Script',cursive;
+  font-weight:700;color:#fff;font-size:clamp(3.6rem,13vw,12rem);line-height:1.05;
+  -webkit-text-stroke:1px rgba(255,255,255,.32);
+  text-shadow:
+    0 0 10px rgba(255,255,255,.85),
+    0 0 34px rgba(90,190,255,.9),
+    0 0 78px rgba(20,95,255,.7),
+    0 0 150px rgba(11,61,145,.85)}
+.wordmark .sub{margin-top:.4rem;text-align:center;font-family:'Orbitron',sans-serif;
+  font-size:clamp(.5rem,1.1vw,.72rem);letter-spacing:.55em;text-indent:.55em;
+  color:rgba(140,215,255,.85)}
+
+/* ══════════ cards ══════════ */
+.card-layer{position:absolute;inset:0;z-index:5;display:grid;place-items:center;
+  padding:clamp(1rem,4vw,2rem);pointer-events:none}
+
+.card{position:relative;grid-area:1/1;width:min(560px,92vw);padding:clamp(1.6rem,3.4vw,2.8rem);
+  opacity:0;isolation:isolate;text-align:left;display:block;color:inherit;
+  text-decoration:none;cursor:default;
+  clip-path:polygon(0 30px,30px 0,100% 0,100% calc(100% - 30px),calc(100% - 30px) 100%,0 100%);
+  background:linear-gradient(155deg,rgba(12,50,125,.72) 0%,rgba(3,14,42,.92) 46%,rgba(0,5,20,.96) 100%);
+  border:1px solid rgba(47,227,255,.42);
+  box-shadow:inset 0 0 70px rgba(20,90,220,.26),0 0 44px rgba(8,50,160,.4);
+  will-change:transform,opacity;
+  transition:box-shadow .35s ease,border-color .35s ease}
+.card::before{content:"";position:absolute;inset:0;z-index:-1;
+  background:repeating-linear-gradient(180deg,rgba(47,227,255,.05) 0 1px,transparent 1px 4px)}
+.card::after{content:"";position:absolute;left:0;right:0;top:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--neon),var(--magenta),transparent)}
+.card .idx{position:absolute;top:1rem;right:1.3rem;font-family:'Orbitron',sans-serif;
+  font-size:.55rem;letter-spacing:.3em;color:rgba(47,227,255,.7)}
+.card .eyebrow{font-family:'Orbitron',sans-serif;font-size:.55rem;letter-spacing:.42em;
+  color:var(--neon-dim);text-transform:uppercase;margin-bottom:.9rem}
+.card h2{font-family:'Orbitron',sans-serif;font-weight:900;text-transform:uppercase;
+  font-size:clamp(1.8rem,5vw,3.2rem);letter-spacing:.08em;color:#fff;line-height:1;
+  text-shadow:0 0 24px rgba(47,227,255,.75),0 0 60px rgba(11,61,145,.9)}
+.card .rule{height:1px;margin:1rem 0;
+  background:linear-gradient(90deg,var(--neon),rgba(255,45,135,.6),transparent)}
+.card p{font-size:clamp(.95rem,1.5vw,1.08rem);line-height:1.6;color:rgba(196,226,255,.82)}
+.card .meta{display:flex;flex-wrap:wrap;gap:.45rem;margin-top:1.3rem}
+.card .meta span{font-family:'Orbitron',sans-serif;font-size:.52rem;letter-spacing:.22em;
+  padding:.42rem .7rem;border:1px solid rgba(47,227,255,.32);
+  color:rgba(150,220,255,.9);background:rgba(8,34,92,.4)}
+.card .go{margin-top:1.6rem;display:inline-flex;align-items:center;gap:.7rem;
+  font-family:'Orbitron',sans-serif;font-size:.62rem;font-weight:700;letter-spacing:.26em;
+  text-transform:uppercase;color:#00131f;background:linear-gradient(90deg,var(--neon),#8bf0ff);
+  padding:.85rem 1.5rem;box-shadow:0 0 26px rgba(47,227,255,.5);
+  clip-path:polygon(0 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%);
+  transition:transform .2s ease,background .25s ease,box-shadow .25s ease}
+
+/* card 01 is a real link */
+.card.is-link{pointer-events:none}
+.card.is-link.armed{pointer-events:auto;cursor:pointer}
+.card.is-link.armed:hover{border-color:rgba(255,45,135,.7);
+  box-shadow:inset 0 0 80px rgba(40,120,255,.36),0 0 56px rgba(47,227,255,.45),0 0 110px rgba(255,45,135,.2)}
+.card.is-link.armed:hover .go{transform:translateX(6px);
+  background:linear-gradient(90deg,var(--magenta),#ff85bb);box-shadow:0 0 34px rgba(255,45,135,.6)}
+
+/* card 02 pronite accent */
+.card.pronite{border-color:rgba(255,45,135,.45);
+  background:linear-gradient(155deg,rgba(90,14,70,.6) 0%,rgba(10,8,40,.93) 48%,rgba(0,4,18,.96) 100%);
+  box-shadow:inset 0 0 70px rgba(190,30,120,.22),0 0 44px rgba(120,10,80,.4)}
+.card.pronite .eyebrow{color:#ff8dc0}
+.card.pronite h2{text-shadow:0 0 24px rgba(255,45,135,.8),0 0 62px rgba(120,10,80,.9)}
+
+/* card 03 terminus */
+.card.terminus{text-align:center;
+  border-color:rgba(255,194,71,.4);
+  background:linear-gradient(155deg,rgba(60,40,10,.5) 0%,rgba(4,12,36,.94) 48%,rgba(0,3,14,.97) 100%);
+  box-shadow:inset 0 0 80px rgba(180,130,30,.16),0 0 50px rgba(90,60,10,.4)}
+.card.terminus::after{background:linear-gradient(90deg,transparent,var(--amber),var(--magenta),transparent)}
+.card.terminus .eyebrow{color:var(--amber);letter-spacing:.5em}
+.card.terminus h2{font-size:clamp(1.5rem,4.2vw,2.6rem);
+  text-shadow:0 0 24px rgba(255,194,71,.7),0 0 60px rgba(160,90,10,.8)}
+.card.terminus .rule{background:linear-gradient(90deg,transparent,var(--amber),transparent)}
+.card.terminus .meta{justify-content:center}
+.card.terminus .meta span{border-color:rgba(255,194,71,.3);color:rgba(255,214,140,.9);
+  background:rgba(50,34,6,.4)}
+.card.terminus .sig{margin-top:1.5rem;font-family:'Great Vibes',cursive;font-size:2.2rem;
+  color:#fff;text-shadow:0 0 20px rgba(255,255,255,.6),0 0 50px rgba(90,190,255,.8)}
+.card.terminus .depth{margin-top:.5rem;font-family:'Orbitron',sans-serif;font-size:.5rem;
+  letter-spacing:.35em;color:rgba(255,194,71,.65)}
+
+/* progress rail */
+.rail{position:fixed;right:clamp(.7rem,1.6vw,1.6rem);top:50%;transform:translateY(-50%);
+  z-index:7;display:flex;flex-direction:column;align-items:center;gap:.55rem;pointer-events:none}
+.rail .dot{width:6px;height:6px;border:1px solid rgba(47,227,255,.45);transform:rotate(45deg);
+  transition:background .3s ease,box-shadow .3s ease,transform .3s ease}
+.rail .dot.on{background:var(--neon);box-shadow:0 0 12px var(--neon);transform:rotate(45deg) scale(1.5)}
+.rail .line{width:1px;flex:0 0 26px;height:26px;background:rgba(47,227,255,.2)}
+
+@media (max-width:720px){
+  .hud-row{font-size:.46rem;letter-spacing:.18em}
+  .rail{display:none}
+  .countdown{gap:.4rem}
+  .card{padding:1.4rem 1.2rem}
+}
+@media (prefers-reduced-motion:reduce){
+  .core,.eq i,.grain,.marquee .row,.scroll-cue .bar,.lockup span{animation:none}
+}
+</style>
+</head>
+<body>
+
+<div class="backdrop"></div>
+<div class="grid"></div>
+<div class="core"></div>
+
+<div class="stage">
+
+  <!-- ── video ── -->
+  <div class="video-wrap" id="videoWrap">
+    <video id="hero" src="../assets/thomso-loop.mp4" poster="../assets/poster.jpg"
+           muted loop playsinline autoplay preload="auto"></video>
+    <div class="streaks" id="streaks"></div>
+  </div>
+
+  <!-- ── hero HUD ── -->
+  <div class="hero" id="heroLayer">
+    <div class="hud-row">
+      <div>
+        <b>29.8543&deg; N / 77.8880&deg; E</b>
+        IIT Roorkee &middot; Uttarakhand
+      </div>
+      <div class="r">
+        <b id="statusLine">SYS // LIVE FEED</b>
+        Drone cam 01 &middot; boomerang loop
+      </div>
+    </div>
+
+    <div class="hero-mid">
+      <div class="kicker">North India's Largest Cultural Fest</div>
+      <div class="lockup" data-text="THOMSO'26">THOMSO'26<span aria-hidden="true">THOMSO'26</span><span aria-hidden="true">THOMSO'26</span></div>
+      <div class="countdown" id="countdown">
+        <div class="unit"><div class="n" id="cd-d">--</div><div class="l">Days</div></div>
+        <div class="unit"><div class="n" id="cd-h">--</div><div class="l">Hrs</div></div>
+        <div class="unit"><div class="n" id="cd-m">--</div><div class="l">Min</div></div>
+        <div class="unit"><div class="n" id="cd-s">--</div><div class="l">Sec</div></div>
+      </div>
+      <div class="eq" id="eq"></div>
+    </div>
+
+    <div class="hud-row">
+      <div><b>EST. 1986</b>40 years of the fest</div>
+      <div class="r"><b>3 NIGHTS</b>80+ events &middot; 30k footfall</div>
+    </div>
+  </div>
+
+  <div class="scroll-cue" id="cue"><span>Scroll</span><span class="bar"></span></div>
+
+  <div class="marquee" id="marquee">
+    <div class="row" id="marqueeRow"></div>
+  </div>
+
+  <!-- ── cursive wordmark ── -->
+  <div class="wordmark" id="wordmark">
+    <div style="text-align:center">
+      <h1>Thomso'26</h1>
+      <div class="sub">Indian Institute of Technology Roorkee</div>
+    </div>
+  </div>
+
+  <!-- ── cards ── -->
+  <div class="card-layer">
+    <a class="card is-link" id="card-events" href="event/">
+      <span class="idx">// 01</span>
+      <div class="eyebrow">Chapter One</div>
+      <h2>Events</h2>
+      <div class="rule"></div>
+      <p>Eighty-plus battles across dance, drama, fashion, music and literature. Registrations are open — pick your arena and take the campus.</p>
+      <div class="meta"><span>80+ EVENTS</span><span>&#8377;15L PRIZE POOL</span><span>OPEN ENTRY</span></div>
+      <div class="go">Enter /event <span>&#8594;</span></div>
+    </a>
+
+    <div class="card pronite" id="card-pronite">
+      <span class="idx">// 02</span>
+      <div class="eyebrow">Chapter Two</div>
+      <h2>Pronite</h2>
+      <div class="rule"></div>
+      <p>Three nights. Zero sleep. Chart-topping headliners, a wall of light and low-end, and thirty thousand voices under one open Roorkee sky.</p>
+      <div class="meta"><span>LIVE ACTS</span><span>EDM STAGE</span><span>MAIN GROUND</span></div>
+    </div>
+
+    <div class="card terminus" id="card-end">
+      <span class="idx">// 03</span>
+      <div class="eyebrow">End of the line</div>
+      <h2>You&rsquo;ve hit the bottom</h2>
+      <div class="rule"></div>
+      <p>That&rsquo;s the whole descent — you scrolled all the way through. There is nothing below this card except the fest itself.</p>
+      <div class="meta"><span>SCROLL DEPTH 100%</span><span>NO FURTHER</span></div>
+      <div class="sig">See you in October</div>
+      <div class="depth">THOMSO'26 &middot; IIT ROORKEE</div>
+    </div>
+  </div>
+
+  <div class="grain"></div>
+</div>
+
+<div class="rail" id="rail">
+  <span class="dot" data-i="0"></span><span class="line"></span>
+  <span class="dot" data-i="1"></span><span class="line"></span>
+  <span class="dot" data-i="2"></span><span class="line"></span>
+  <span class="dot" data-i="3"></span><span class="line"></span>
+  <span class="dot" data-i="4"></span>
+</div>
+
+<div class="scroll-track"></div>
+
+<script>
+(function(){
+  'use strict';
+
+  const $ = id => document.getElementById(id);
+  const video     = $('hero');
+  const videoWrap = $('videoWrap');
+  const streaks   = $('streaks');
+  const heroLayer = $('heroLayer');
+  const marquee   = $('marquee');
+  const cue       = $('cue');
+  const wordmark  = $('wordmark');
+  const cardEvents= $('card-events');
+  const cardPro   = $('card-pronite');
+  const cardEnd   = $('card-end');
+  const rail      = $('rail');
+  const dots      = [...rail.querySelectorAll('.dot')];
+
+  /* ─────────── timeline (progress 0 → 1) ───────────
+     0.00–0.16  video holds, hero HUD live
+     0.06–0.24  video + HUD fade out
+     0.20–0.34  THOMSO'26 cursive fades in
+     0.34–0.46  wordmark rotates on Y, then fades
+     0.46–0.62  EVENTS card  (clickable → /event)
+     0.62–0.78  PRONITE card
+     0.78–1.00  terminus card
+  ------------------------------------------------- */
+  const VIDEO_OUT  = [0.06, 0.24];
+  const HERO_OUT   = [0.03, 0.17];
+  const WORD_IN    = [0.20, 0.33];
+  const WORD_SPIN  = [0.33, 0.47];
+  const WORD_OUT   = [0.40, 0.47];
+  const EV         = [0.46, 0.56, 0.62];  // in-start, in-end, out-end
+  const PRO        = [0.63, 0.72, 0.79];
+  const END        = [0.80, 0.90];
+
+  const clamp  = v => v < 0 ? 0 : v > 1 ? 1 : v;
+  const range  = (p,[a,b]) => clamp((p - a) / (b - a));
+  const ease   = t => t * t * (3 - 2 * t);
+  const easeOut= t => 1 - Math.pow(1 - t, 3);
+
+  let progress = 0, target = 0, velocity = 0, ticking = false, raf = null;
+
+  /* ── 2. speed illusion ───────────────────────────
+     Real scroll feeds `target`; the rendered `progress`
+     chases it with an over-eager lerp, so a slow flick
+     still snaps forward fast, and velocity drives the
+     streaks / blur / skew. Feels quick at any speed.  */
+  const CHASE = 0.16;
+
+  function readScroll(){
+    const max = document.documentElement.scrollHeight - window.innerHeight;
+    target = max > 0 ? clamp(window.scrollY / max) : 0;
+    if (!raf) loop();
+  }
+
+  function loop(){
+    const delta = target - progress;
+    progress += delta * CHASE;
+    // smoothed velocity, amplified so slow scrolling still reads as fast
+    velocity += (Math.abs(delta) * 26 - velocity) * 0.18;
+    if (Math.abs(delta) < 0.0002 && velocity < 0.002){
+      progress = target; velocity = 0; render(); raf = null; return;
+    }
+    render();
+    raf = requestAnimationFrame(loop);
+  }
+
+  function render(){
+    const p = progress;
+    const v = Math.min(velocity, 1);
+
+    /* ── 1. video: boomerang loop, only while parked at the top ── */
+    const atRest = p < 0.02;
+    if (atRest && video.paused) video.play().catch(()=>{});
+    else if (!atRest && !video.paused) video.pause();
+
+    /* ── 2. video fades on scroll-in, with speed feedback ── */
+    const vOut = ease(range(p, VIDEO_OUT));
+    videoWrap.style.opacity   = (1 - vOut).toFixed(4);
+    videoWrap.style.transform = `scale(${(1 + vOut * 0.22 + v * 0.05).toFixed(4)}) translateY(${(-v * 26).toFixed(2)}px)`;
+    videoWrap.style.filter    = `blur(${(v * 9).toFixed(2)}px) brightness(${(1 + v * 0.25).toFixed(3)})`;
+
+    streaks.style.opacity   = (v * 0.5).toFixed(3);
+    streaks.style.transform = `scaleY(${(1 + v * 3).toFixed(2)})`;
+
+    const hOut = ease(range(p, HERO_OUT));
+    heroLayer.style.opacity   = (1 - hOut).toFixed(4);
+    heroLayer.style.transform = `translateY(${(-hOut * 70 - v * 30).toFixed(2)}px) scale(${(1 - hOut * 0.06).toFixed(4)})`;
+    marquee.style.opacity     = (1 - hOut).toFixed(4);
+    cue.style.opacity         = (1 - clamp(p / 0.04)).toFixed(3);
+
+    /* ── 3 + 4. cursive wordmark: fade in, spin on Y, fade out ── */
+    const wIn   = ease(range(p, WORD_IN));
+    const spin  = ease(range(p, WORD_SPIN));
+    const wOut  = ease(range(p, WORD_OUT));
+    const wOpac = wIn * (1 - wOut);
+    wordmark.style.opacity = wOpac.toFixed(4);
+    wordmark.style.transform =
+      `perspective(1400px) rotateY(${(spin * 190).toFixed(2)}deg) ` +
+      `scale(${(0.86 + wIn * 0.14 - wOut * 0.12).toFixed(4)}) ` +
+      `translateZ(${(-wOut * 260).toFixed(1)}px)`;
+
+    /* ── 5–7. cards ── */
+    setCard(cardEvents, p, EV);
+    setCard(cardPro,    p, PRO);
+    setCard(cardEnd,    p, [END[0], END[1], 1.2]);
+
+    // card 01 only clickable while it is actually on screen
+    cardEvents.classList.toggle('armed', p > EV[0] + 0.04 && p < EV[2] - 0.01);
+
+    /* progress rail */
+    const stage = p < 0.2 ? 0 : p < 0.46 ? 1 : p < 0.63 ? 2 : p < 0.8 ? 3 : 4;
+    dots.forEach((d,i) => d.classList.toggle('on', i === stage));
+  }
+
+  function setCard(el, p, [inA, inB, outB]){
+    const tIn  = easeOut(range(p, [inA, inB]));
+    const tOut = ease(range(p, [inB + (outB - inB) * 0.35, outB]));
+    const o = tIn * (1 - tOut);
+    el.style.opacity = o.toFixed(4);
+    el.style.transform =
+      `translateY(${((1 - tIn) * 110 - tOut * 90).toFixed(2)}px) ` +
+      `scale(${(0.9 + tIn * 0.1 - tOut * 0.08).toFixed(4)}) ` +
+      `rotateX(${((1 - tIn) * 12 - tOut * 10).toFixed(2)}deg)`;
+    el.style.filter = o < 0.99 ? `blur(${((1 - o) * 6).toFixed(2)}px)` : 'none';
+  }
+
+  window.addEventListener('scroll', readScroll, {passive:true});
+  window.addEventListener('resize', readScroll);
+
+  /* autoplay guards */
+  video.addEventListener('canplay', () => { if (progress < 0.02) video.play().catch(()=>{}); });
+  ['pointerdown','keydown','touchstart','wheel'].forEach(ev =>
+    window.addEventListener(ev, () => {
+      if (progress < 0.02 && video.paused) video.play().catch(()=>{});
+    }, {once:true, passive:true}));
+
+  /* ── 10. countdown to the fest ── */
+  const FEST = new Date('2026-10-16T18:00:00+05:30').getTime();
+  const pad = n => String(n).padStart(2,'0');
+  function tick(){
+    const d = FEST - Date.now();
+    if (d <= 0){ $('statusLine').textContent = 'SYS // FEST IS LIVE'; return; }
+    const s = Math.floor(d/1000);
+    $('cd-d').textContent = pad(Math.floor(s/86400));
+    $('cd-h').textContent = pad(Math.floor(s/3600) % 24);
+    $('cd-m').textContent = pad(Math.floor(s/60) % 60);
+    $('cd-s').textContent = pad(s % 60);
+  }
+  tick(); setInterval(tick, 1000);
+
+  /* equaliser bars */
+  const eq = $('eq');
+  for (let i = 0; i < 26; i++){
+    const b = document.createElement('i');
+    b.style.animationDelay  = (-Math.random() * 1.1).toFixed(2) + 's';
+    b.style.animationDuration = (0.7 + Math.random() * 0.8).toFixed(2) + 's';
+    eq.appendChild(b);
+  }
+
+  /* marquee ticker — duplicated once so the loop is seamless */
+  const TICKER = ['THOMSO&rsquo;26','&#9670;','IIT ROORKEE','&#9670;','3 NIGHTS','&#9670;','80+ EVENTS',
+                  '&#9670;','PRONITE','&#9670;','30,000 FOOTFALL','&#9670;','REGISTRATIONS OPEN','&#9670;'];
+  const half = TICKER.map(t => t === '&#9670;' ? `<em>${t}</em>` : `<span>${t}</span>`).join('');
+  $('marqueeRow').innerHTML = half + half;
+
+  readScroll();
+  render();
+})();
+</script>
+</body>
+</html>
