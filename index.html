@@ -7,6 +7,14 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,500;1,600;1,700&family=Great+Vibes&family=Orbitron:wght@500;700;900&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet">
+<script type="importmap">
+{
+  "imports": {
+    "three": "./vendor/three/build/three.module.min.js",
+    "three/addons/": "./vendor/three/addons/"
+  }
+}
+</script>
 <style>
 :root{
   /* dark blue — the spine of the identity. No hue lives outside this
@@ -141,24 +149,8 @@ body{
     radial-gradient(ellipse 70% 62% at 50% 50%, rgba(6,9,14,.58) 0%, rgba(3,6,11,.76) 55%, rgba(0,1,5,.93) 100%),
     linear-gradient(180deg,rgba(0,1,6,.7) 0%,rgba(0,0,0,.3) 40%,rgba(0,0,0,.3) 62%,rgba(0,1,6,.8) 100%)}
 
-/* keep each subject in frame — all three are tall portraits on a wide stage */
-#sc-word  .bg{background-position:50% 38%}
-#sc-event .bg{background-position:50% 42%}
-#sc-pro   .bg{background-position:44% 55%}
-
-/* 4. terminus watermark */
-.scene-logo{background:radial-gradient(ellipse 55% 48% at 50% 50%,rgba(12,36,84,.44) 0%,rgba(6,10,16,.86) 60%,rgba(0,2,8,.97) 100%)}
-.scene-logo .mark{position:absolute;left:50%;top:50%;width:min(78vw,760px);
-  transform:translate(-50%,-50%) scale(calc(0.86 + var(--t) * 0.14));
-  opacity:calc(var(--t) * .32);mix-blend-mode:screen;
-  filter:blur(calc((1 - var(--t)) * 14px)) drop-shadow(0 0 55px rgba(168,200,226,.45));
-  will-change:transform,opacity,filter}
-/* breathing halo sits on its own layer so it can't clobber the reveal blur */
-.scene-logo::after{content:"";position:absolute;left:50%;top:50%;width:min(70vw,680px);
-  aspect-ratio:347/195;transform:translate(-50%,-50%);pointer-events:none;
-  background:radial-gradient(ellipse 50% 50% at 50% 50%,rgba(168,200,226,.2) 0%,rgba(160,180,200,.08) 45%,transparent 72%);
-  filter:blur(40px);opacity:calc(var(--t) * .9);animation:markpulse 8s ease-in-out infinite}
-@keyframes markpulse{0%,100%{transform:translate(-50%,-50%) scale(1)}50%{transform:translate(-50%,-50%) scale(1.14)}}
+/* keep the subject in frame — a tall portrait on a wide stage */
+#sc-word .bg{background-position:50% 38%}
 
 /* ══════════ hero HUD ══════════ */
 .hero{position:absolute;inset:0;z-index:4;pointer-events:none;
@@ -353,79 +345,53 @@ body{
 .xcard.dark h3{color:var(--white)}
 .xcard.dark p{color:rgba(174,187,201,.92)}
 
-/* ══════════ cards ══════════ */
-.card-layer{position:absolute;inset:0;z-index:5;display:grid;place-items:center;
-  padding:clamp(1rem,4vw,2rem);pointer-events:none}
-/* the slot takes the scroll transform; the card inside keeps drifting on its own */
-.card-slot{grid-area:1/1;pointer-events:none;opacity:0;transform-style:preserve-3d;
-  will-change:transform,opacity,filter}
+/* ══════════════════════════════════════════════════════
+   THE VAULT — the 3D navigation world
+   The canvas is the last chapter of the scroll. It sits under the
+   overlay chrome and over the photographic scenes, so the previous
+   chapter dissolves straight into the world rather than cutting.
+   ══════════════════════════════════════════════════════ */
+.vault{position:absolute;inset:0;z-index:3;opacity:0;pointer-events:none;
+  will-change:opacity}
+.vault canvas{display:block;width:100%;height:100%;outline:none;
+  /* pan-y is exactly the split we want: the browser keeps vertical
+     panning, so the page always scrolls and the reader is never trapped,
+     while horizontal movement is left unclaimed for the camera to take */
+  touch-action:pan-y}
+/* keyboard users get the camera too, so they get a visible focus ring */
+.vault canvas:focus-visible{outline:1px solid var(--ice-dim);outline-offset:-4px}
+.vault.live{pointer-events:auto}
+.vault.live canvas{cursor:crosshair}
 
-.card{position:relative;width:min(560px,92vw);padding:clamp(1.6rem,3.4vw,2.8rem);
-  isolation:isolate;text-align:left;display:block;color:inherit;
-  text-decoration:none;cursor:default;
-  clip-path:polygon(0 30px,30px 0,100% 0,100% calc(100% - 30px),calc(100% - 30px) 100%,0 100%);
-  background:linear-gradient(155deg,rgba(16,44,96,.68) 0%,rgba(14,18,24,.92) 46%,rgba(0,2,8,.96) 100%);
-  border:1px solid rgba(168,200,226,.34);
-  box-shadow:inset 0 0 70px rgba(30,72,150,.2),0 0 44px rgba(6,12,24,.6);
-  animation:drift 12s ease-in-out infinite;
-  transition:box-shadow .35s ease,border-color .35s ease}
-.card::before{content:"";position:absolute;inset:0;z-index:-1;
-  background:repeating-linear-gradient(180deg,rgba(180,210,235,.05) 0 1px,transparent 1px 4px)}
-.card::after{content:"";position:absolute;left:0;right:0;top:0;height:2px;
-  background:linear-gradient(90deg,transparent,var(--ice),rgba(230,240,250,.8),transparent)}
-.card .idx{position:absolute;top:1rem;right:1.3rem;font-family:'Orbitron',sans-serif;
-  font-size:.55rem;letter-spacing:.3em;color:rgba(151,163,177,.85)}
-.card .eyebrow{font-family:'Orbitron',sans-serif;font-size:.55rem;letter-spacing:.42em;
-  color:var(--ice-dim);text-transform:uppercase;margin-bottom:.9rem}
-.card h2{font-family:'Orbitron',sans-serif;font-weight:900;text-transform:uppercase;
-  font-size:clamp(1.8rem,5vw,3.2rem);letter-spacing:.08em;color:#fff;line-height:1;
-  text-shadow:0 0 24px rgba(168,200,226,.6),0 0 60px rgba(14,44,96,.9)}
-.card .rule{height:1px;margin:1rem 0;
-  background:linear-gradient(90deg,var(--ice),rgba(151,163,177,.6),transparent)}
-.card p{font-size:clamp(.95rem,1.5vw,1.08rem);line-height:1.6;color:rgba(186,199,213,.86)}
-.card .meta{display:flex;flex-wrap:wrap;gap:.45rem;margin-top:1.3rem}
-.card .meta span{font-family:'Orbitron',sans-serif;font-size:.52rem;letter-spacing:.22em;
-  padding:.42rem .7rem;border:1px solid rgba(151,163,177,.3);
-  color:rgba(170,186,202,.92);background:rgba(18,24,32,.5)}
-.card .go{margin-top:1.6rem;display:inline-flex;align-items:center;gap:.7rem;
-  font-family:'Orbitron',sans-serif;font-size:.62rem;font-weight:700;letter-spacing:.26em;
-  text-transform:uppercase;color:#071018;background:linear-gradient(90deg,var(--ice),#e8f0f7);
-  padding:.85rem 1.5rem;box-shadow:0 0 26px rgba(168,200,226,.42);
-  clip-path:polygon(0 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%);
-  transition:transform .2s ease,background .25s ease,box-shadow .25s ease}
+/* the departure veil: the world falls away into this on the way out */
+.veil{position:absolute;inset:0;z-index:6;background:var(--black);opacity:0;
+  pointer-events:none;transition:opacity .12s linear}
 
-/* card 01 is a real link */
-.card.is-link{pointer-events:none}
-.card.is-link.armed{pointer-events:auto;cursor:pointer}
-.card.is-link.armed:hover{border-color:rgba(255,255,255,.6);
-  box-shadow:inset 0 0 80px rgba(44,96,168,.3),0 0 56px rgba(168,200,226,.4),0 0 110px rgba(151,163,177,.16)}
-.card.is-link.armed:hover .go{transform:translateX(6px);
-  background:linear-gradient(90deg,var(--white),#cfe0ee);box-shadow:0 0 34px rgba(225,235,245,.55)}
+/* the only text the world is allowed. Appears once, then leaves. */
+.vault-hint{position:absolute;left:50%;bottom:clamp(3rem,9vh,6rem);z-index:7;
+  transform:translate(-50%,14px);opacity:0;pointer-events:none;
+  font-family:'Orbitron',sans-serif;font-size:clamp(.5rem,1vw,.62rem);
+  letter-spacing:.42em;text-indent:.42em;text-transform:uppercase;
+  color:rgba(185,200,216,.82);text-shadow:0 0 22px rgba(0,2,8,.9);
+  transition:opacity .9s ease,transform .9s ease}
+.vault-hint.on{opacity:1;transform:translate(-50%,0)}
+.vault-hint::after{content:"";display:block;width:52px;height:1px;margin:.9rem auto 0;
+  background:linear-gradient(90deg,transparent,rgba(168,200,226,.7),transparent)}
 
-/* card 02 pronite accent */
-.card.pronite{border-color:rgba(96,126,164,.4);
-  background:linear-gradient(155deg,rgba(20,36,64,.58) 0%,rgba(16,18,28,.93) 48%,rgba(0,2,8,.96) 100%);
-  box-shadow:inset 0 0 70px rgba(60,86,124,.18),0 0 44px rgba(10,12,20,.6)}
-.card.pronite .eyebrow{color:#9db4cd}
-.card.pronite h2{text-shadow:0 0 24px rgba(96,126,164,.7),0 0 62px rgba(22,40,70,.9)}
+/* shown only if the world is still resolving when the user arrives */
+.vault-load{position:absolute;left:50%;top:50%;z-index:7;transform:translate(-50%,-50%);
+  opacity:0;pointer-events:none;transition:opacity .5s ease;
+  font-family:'Orbitron',sans-serif;font-size:.52rem;letter-spacing:.5em;
+  text-indent:.5em;text-transform:uppercase;color:rgba(151,163,177,.7)}
+.vault-load.on{opacity:1}
 
-/* card 03 terminus */
-.card.terminus{text-align:center;
-  border-color:rgba(205,216,228,.36);
-  background:linear-gradient(155deg,rgba(30,38,50,.5) 0%,rgba(14,18,24,.94) 48%,rgba(0,2,8,.97) 100%);
-  box-shadow:inset 0 0 80px rgba(120,140,165,.14),0 0 50px rgba(8,10,16,.6)}
-.card.terminus::after{background:linear-gradient(90deg,transparent,var(--platinum),rgba(240,245,250,.7),transparent)}
-.card.terminus .eyebrow{color:var(--platinum);letter-spacing:.5em}
-.card.terminus h2{font-size:clamp(1.5rem,4.2vw,2.6rem);
-  text-shadow:0 0 24px rgba(205,216,228,.6),0 0 60px rgba(34,42,56,.85)}
-.card.terminus .rule{background:linear-gradient(90deg,transparent,var(--platinum),transparent)}
-.card.terminus .meta{justify-content:center}
-.card.terminus .meta span{border-color:rgba(205,216,228,.28);color:rgba(222,231,240,.9);
-  background:rgba(24,30,40,.45)}
-.card.terminus .sig{margin-top:1.5rem;font-family:'Great Vibes',cursive;font-size:2.2rem;
-  color:#fff;text-shadow:0 0 20px rgba(255,255,255,.6),0 0 50px rgba(140,175,210,.8)}
-.card.terminus .depth{margin-top:.5rem;font-family:'Orbitron',sans-serif;font-size:.5rem;
-  letter-spacing:.35em;color:rgba(205,216,228,.62)}
+/* real navigation for keyboard and screen readers. Never painted:
+   the visible navigation is the world itself. */
+.vault-routes{position:absolute;width:1px;height:1px;margin:-1px;padding:0;
+  overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;border:0}
+.vault-routes a:focus{position:fixed;left:1rem;top:1rem;width:auto;height:auto;
+  clip:auto;clip-path:none;z-index:20;padding:.6rem 1rem;background:var(--graphite);
+  color:var(--white);border:1px solid var(--ice-dim)}
 
 /* progress rail */
 .rail{position:fixed;right:clamp(.7rem,1.6vw,1.6rem);top:50%;transform:translateY(-50%);
@@ -451,7 +417,6 @@ body{
   .hud-row{font-size:.46rem;letter-spacing:.18em}
   .rail{display:none}
   .countdown{gap:.4rem}
-  .card{padding:1.4rem 1.2rem}
   .x-head{max-width:16ch}
   /* stack the flyers on a phone, and keep them small enough to all fit */
   .expect-cards{flex-direction:column;align-items:center;gap:.7rem;margin-top:2rem}
@@ -464,8 +429,8 @@ body{
   .xc-body p{font-size:.82rem;line-height:1.45}
 }
 @media (prefers-reduced-motion:reduce){
-  .core,.eq i,.grain,.marquee .row,.scroll-cue .bar,.lockup span,.scene-logo::after,
-  .xc-float,.xc-body::after,.x-head .em,.dust i,.card{animation:none}
+  .core,.eq i,.grain,.marquee .row,.scroll-cue .bar,.lockup span,
+  .xc-float,.xc-body::after,.x-head .em,.dust i{animation:none}
 }
 </style>
 </head>
@@ -492,18 +457,6 @@ body{
   <div class="scene" id="sc-expect">
     <div class="bg mono" style="background-image:url('assets/poster.jpg')"></div>
     <div class="tint mono"></div><div class="vig"></div>
-  </div>
-  <div class="scene" id="sc-event">
-    <div class="bg" style="background-image:url('assets/saleem.jpg')"></div>
-    <div class="tint"></div><div class="vig"></div>
-  </div>
-  <div class="scene" id="sc-pro">
-    <div class="bg" style="background-image:url('assets/navjot.webp')"></div>
-    <div class="tint deep"></div><div class="vig"></div>
-  </div>
-  <div class="scene scene-logo" id="sc-end">
-    <img class="mark" src="assets/thomso-logo-neon.svg" alt="" aria-hidden="true">
-    <div class="vig"></div>
   </div>
 
   <!-- ── hero HUD ── -->
@@ -585,44 +538,20 @@ body{
     </div>
   </div>
 
-  <!-- ── cards ── -->
-  <div class="card-layer">
-    <div class="card-slot" id="slot-events">
-      <a class="card is-link" id="card-events" href="event/">
-        <span class="idx">// 01</span>
-        <div class="eyebrow">Chapter One</div>
-        <h2>Events</h2>
-        <div class="rule"></div>
-        <p>Eighty-plus battles across dance, drama, fashion, music and literature. Registrations are open — pick your arena and take the campus.</p>
-        <div class="meta"><span>80+ EVENTS</span><span>&#8377;15L PRIZE POOL</span><span>OPEN ENTRY</span></div>
-        <div class="go">Enter /event <span>&#8594;</span></div>
-      </a>
-    </div>
-
-    <div class="card-slot" id="slot-pronite">
-      <div class="card pronite">
-        <span class="idx">// 02</span>
-        <div class="eyebrow">Chapter Two</div>
-        <h2>Pronite</h2>
-        <div class="rule"></div>
-        <p>Three nights. Zero sleep. Chart-topping headliners, a wall of light and low-end, and thirty thousand voices under one open Roorkee sky.</p>
-        <div class="meta"><span>LIVE ACTS</span><span>EDM STAGE</span><span>MAIN GROUND</span></div>
-      </div>
-    </div>
-
-    <div class="card-slot" id="slot-end">
-      <div class="card terminus">
-        <span class="idx">// 03</span>
-        <div class="eyebrow">End of the line</div>
-        <h2>You&rsquo;ve hit the bottom</h2>
-        <div class="rule"></div>
-        <p>That&rsquo;s the whole descent — you scrolled all the way through. There is nothing below this card except the fest itself.</p>
-        <div class="meta"><span>SCROLL DEPTH 100%</span><span>NO FURTHER</span></div>
-        <div class="sig">See you in October</div>
-        <div class="depth">THOMSO'26 &middot; IIT ROORKEE</div>
-      </div>
-    </div>
+  <!-- ── the vault: 3D navigation world ── -->
+  <div class="vault" id="vault" aria-label="Immersive navigation. Move your cursor or swipe to look around and find the gateways.">
+    <canvas id="vaultCanvas" tabindex="0"></canvas>
+    <div class="veil" id="vaultVeil"></div>
+    <div class="vault-load" id="vaultLoad">Resolving</div>
+    <div class="vault-hint" id="vaultHint"></div>
   </div>
+
+  <!-- the same six destinations, reachable without a pointer -->
+  <nav class="vault-routes" aria-label="Site sections">
+    <a href="event/">Events</a><a href="schedule/">Schedule</a>
+    <a href="sponsors/">Sponsors</a><a href="team/">Team</a>
+    <a href="register/">Register</a><a href="about/">About</a>
+  </nav>
 
   <div class="grain"></div>
 </div>
@@ -631,9 +560,7 @@ body{
   <span class="dot" data-i="0"></span><span class="line"></span>
   <span class="dot" data-i="1"></span><span class="line"></span>
   <span class="dot" data-i="2"></span><span class="line"></span>
-  <span class="dot" data-i="3"></span><span class="line"></span>
-  <span class="dot" data-i="4"></span><span class="line"></span>
-  <span class="dot" data-i="5"></span>
+  <span class="dot" data-i="3"></span>
 </div>
 
 <div class="scroll-track"></div>
@@ -655,10 +582,9 @@ body{
   const xEyebrow  = $('xEyebrow');
   const xhead     = $('xhead');
   const xSweep    = $('xSweep');
-  const slotEv    = $('slot-events');
-  const slotPro   = $('slot-pronite');
-  const slotEnd   = $('slot-end');
-  const cardEvents= $('card-events');
+  const vault     = $('vault');
+  const vaultHint = $('vaultHint');
+  const vaultLoad = $('vaultLoad');
   const rail      = $('rail');
   const dots      = [...rail.querySelectorAll('.dot')];
   const REDUCED   = window.matchMedia('(prefers-reduced-motion:reduce)').matches;
@@ -666,10 +592,7 @@ body{
   /* chapter backdrops: [element, fadeInStart, fullIn, holdEnd, fadeOutEnd] */
   const SCENES = [
     [$('sc-word'),   0.135, 0.215, 0.310, 0.370],
-    [$('sc-expect'), 0.335, 0.420, 0.630, 0.700],
-    [$('sc-event'),  0.665, 0.730, 0.790, 0.830],
-    [$('sc-pro'),    0.790, 0.850, 0.900, 0.925],
-    [$('sc-end'),    0.900, 0.955, 2.000, 2.100]   // never leaves — it is the end
+    [$('sc-expect'), 0.335, 0.420, 0.600, 0.665]
   ];
 
   /* ─────────── timeline (progress 0 → 1) ───────────
@@ -677,10 +600,9 @@ body{
      0.05–0.20  video + HUD fade out
      0.16–0.25  THOMSO'26 cursive fades in
      0.25–0.36  wordmark rotates on Y, then fades
-     0.34–0.70  WHAT TO EXPECT — headline assembles, 3 cards fly in
-     0.68–0.80  EVENTS card  (clickable → /event)
-     0.80–0.91  PRONITE card
-     0.91–1.00  terminus card
+     0.34–0.66  WHAT TO EXPECT — headline assembles, 3 cards fly in
+     0.62–0.86  THE VAULT emerges out of the dark
+     0.86–1.00  arrival: the world is live and the user looks around
   ------------------------------------------------- */
   const VIDEO_OUT  = [0.05, 0.20];
   const HERO_OUT   = [0.03, 0.15];
@@ -689,15 +611,16 @@ body{
   const WORD_OUT   = [0.31, 0.365];
 
   const XP_IN      = [0.345, 0.425];   // chapter presence in
-  const XP_OUT     = [0.640, 0.700];   // chapter presence out
+  const XP_OUT     = [0.605, 0.665];   // chapter presence out
   const HEAD_IN    = [0.360, 0.480];   // headline assembly window
   const HEAD_STAG  = 0.62;             // share of the window spent staggering
   const XC_IN      = [0.430, 0.560];   // card flight window (staggered inside)
-  const XC_OUT     = [0.620, 0.690];   // cards scatter away
+  const XC_OUT     = [0.585, 0.655];   // cards scatter away
 
-  const EV         = [0.680, 0.755, 0.800];  // in-start, in-end, out-end
-  const PRO        = [0.805, 0.865, 0.910];
-  const END        = [0.915, 0.960];
+  /* the world overlaps the tail of the expect chapter, so one dissolves
+     into the other instead of the page cutting between them */
+  const VAULT_IN   = [0.620, 0.860];
+  const VAULT_LOAD = 0.400;            // start fetching this far out
 
   const clamp  = v => v < 0 ? 0 : v > 1 ? 1 : v;
   const range  = (p,[a,b]) => clamp((p - a) / (b - a));
@@ -855,16 +778,11 @@ body{
     /* ── WHAT TO EXPECT ── */
     renderExpect(p, v);
 
-    /* ── cards ── */
-    setCard(slotEv,  p, EV,  v);
-    setCard(slotPro, p, PRO, v);
-    setCard(slotEnd, p, [END[0], END[1], 1.2], v);
-
-    // card 01 only clickable while it is actually on screen
-    cardEvents.classList.toggle('armed', p > EV[0] + 0.04 && p < EV[2] - 0.01);
+    /* ── the vault ── */
+    renderVault(p);
 
     /* progress rail */
-    const stage = p < 0.16 ? 0 : p < 0.345 ? 1 : p < 0.68 ? 2 : p < 0.805 ? 3 : p < 0.915 ? 4 : 5;
+    const stage = p < 0.16 ? 0 : p < 0.345 ? 1 : p < 0.62 ? 2 : 3;
     dots.forEach((d,i) => d.classList.toggle('on', i === stage));
   }
 
@@ -948,17 +866,68 @@ body{
     }
   }
 
-  function setCard(el, p, [inA, inB, outB], v){
-    const tIn  = easeOut(range(p, [inA, inB]));
-    const tOut = ease(range(p, [inB + (outB - inB) * 0.35, outB]));
-    const o = tIn * (1 - tOut);
-    el.style.opacity = o.toFixed(4);
-    el.style.transform =
-      `translate3d(${(mx * 20).toFixed(1)}px,${((1 - tIn) * 110 - tOut * 90 + my * 14).toFixed(2)}px,0) ` +
-      `scale(${(0.9 + tIn * 0.1 - tOut * 0.08).toFixed(4)}) ` +
-      `rotateY(${(mx * 7).toFixed(2)}deg) ` +
-      `rotateX(${((1 - tIn) * 12 - tOut * 10 + my * -5).toFixed(2)}deg)`;
-    el.style.filter = o < 0.99 ? `blur(${((1 - o) * 6).toFixed(2)}px)` : 'none';
+  /* ══════════════════════════════════════════════════════════════
+     THE VAULT
+     The last chapter is not a chapter — it is a place. The scroll
+     only decides how present it is; once it has fully arrived the
+     page stops driving and the user takes over the camera.
+
+     The module is fetched while the user is still reading the
+     previous chapter, so arriving never means waiting.
+     ══════════════════════════════════════════════════════════════ */
+  let world = null, worldLoading = false, worldFailed = false;
+  let hintShown = false, hintTimer = null;
+
+  const TOUCH = matchMedia('(pointer:coarse)').matches;
+
+  function loadWorld(){
+    if (world || worldLoading || worldFailed) return;
+    worldLoading = true;
+    import('./world/src/World.js')
+      .then(({ createWorld }) => {
+        world = createWorld({
+          canvas: $('vaultCanvas'),
+          veil:   $('vaultVeil'),
+          onFirstLook: dismissHint,
+          onReady: () => vaultLoad.classList.remove('on')
+        });
+        world.setPresence(ease(range(progress, VAULT_IN)));
+      })
+      .catch(err => {
+        // the world is an enhancement: if it cannot load, the site is
+        // still a complete, navigable page via the routes list
+        worldFailed = true;
+        vaultLoad.classList.remove('on');
+        console.warn('[vault] 3D navigation unavailable:', err);
+      });
+  }
+
+  function showHint(){
+    if (hintShown) return;
+    hintShown = true;
+    vaultHint.textContent = TOUCH ? 'Swipe to look around'
+                                  : 'Move your cursor to look around';
+    vaultHint.classList.add('on');
+    hintTimer = setTimeout(dismissHint, 4200);
+  }
+  function dismissHint(){
+    clearTimeout(hintTimer);
+    vaultHint.classList.remove('on');
+  }
+
+  function renderVault(p){
+    if (p > VAULT_LOAD) loadWorld();
+
+    const t = ease(range(p, VAULT_IN));
+    vault.style.opacity = t.toFixed(4);
+    const live = t > 0.9;
+    vault.classList.toggle('live', live);
+
+    if (world) world.setPresence(t);
+    else if (t > 0.02 && !worldFailed) vaultLoad.classList.add('on');
+
+    if (live) showHint();
+    else if (hintShown) { hintShown = false; dismissHint(); }
   }
 
   window.addEventListener('scroll', readScroll, {passive:true});
